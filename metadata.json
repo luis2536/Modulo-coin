@@ -1,0 +1,6 @@
+{
+  "name": "Syntropy Delta Nexus",
+  "description": "Local productivity and data monitoring tool.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
