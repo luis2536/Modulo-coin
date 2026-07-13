@@ -1,129 +1,144 @@
-# SYNTROPY DELTA NEXUS
+# SYNTROPY DELTA NEXUS OMNI
 
-**Syntropy Delta Nexus** es una plataforma móvil de alto rendimiento diseñada para la gestión operativa en ecosistemas descentralizados, redes Web3, tareas DePIN y monitoreo automatizado de testnets. El sistema está estructurado bajo los principios de **Clean Architecture** (Arquitectura Limpia) con el patrón de presentación **MVVM (Model-View-ViewModel)** en Android utilizando **Jetpack Compose** y base de datos local **Room** (SQLite encriptado).
+**Syntropy Delta Nexus OMNI** es un sistema operativo móvil de gestión de operaciones (ERP) de grado militar y alta disponibilidad, diseñado para operadores que interactúan con ecosistemas descentralizados, tareas DePIN y redes de prueba (testnets) Web3. Este ecosistema está blindado con mitigaciones de ciberseguridad proactivas para garantizar el anonimato del operador, mitigar la detección heurística de bots y persistir operaciones con total estabilidad.
 
----
-
-## 🛠️ ARQUITECTURA DEL SISTEMA
-
-La aplicación está completamente modularizada en tres capas bien definidas:
-
-### 1. Capa de Presentación (Presentation)
-*   **SyntropyDeltaNexusApp & MainActivity**: Implementa un diseño táctico tipo **Bento Grid** con Material Design 3. Posee un tema oscuro adaptado para operadoras y arquitectos de red.
-*   **MainViewModel**: Coordina el estado de la aplicación exponiendo flujos reactivos (`StateFlow`). Gestiona un ciclo continuo de automatización y lectura de datos que actualiza la telemetría cada 6 segundos de manera asíncrona mediante corrutinas de Kotlin.
-
-### 2. Capa de Dominio (Domain)
-*   **Modelos de Datos Puros**: `Task` (Tareas/Quests), `LogEntry` (Logs técnicos) y `RpcNode` (Telemetría de Redes).
-*   **Casos de Uso (Use Cases)**:
-    *   `GetTasksUseCase` y `AddTaskUseCase`: Gestión local de la cola de trabajo.
-    *   `GetLogsUseCase` y `AddLogUseCase`: Reporte de telemetría directo al terminal integrado.
-    *   `QueryRpcNodesUseCase`: Orquestador de solicitudes RPC de solo lectura con rotación simulada de firmas de red y User-Agents para evitar bloqueos por bots.
-
-### 3. Capa de Datos (Data)
-*   **Room Database**: Base de datos SQLite local (`syntropy_nexus_database`) que persiste de manera segura las colas de tareas y logs técnicos.
-*   **Repository Implementations**: Mapeo completo entre las entidades de base de datos (`TaskEntity`, `LogEntity`) y los modelos de negocio del dominio para evitar acoplamientos rígidos.
+El sistema sigue de forma estricta los principios de **Clean Architecture** y el patrón de presentación reactiva **MVVM (Model-View-ViewModel)** en Android utilizando **Jetpack Compose**, respaldado por una base de datos local **Room (SQLite)** de alta velocidad.
 
 ---
 
-## 📂 ESTRUCTURA DE DIRECTORIOS
+## 🛠️ ARQUITECTURA DETALLADA DEL SISTEMA
 
-El código fuente está organizado de la siguiente manera:
+La aplicación está segmentada de manera modular para garantizar un acoplamiento laxo y facilitar auditorías de código independientes:
+
+```text
+Capa de Presentación (UI/ViewModel)  -->  Capa de Dominio (Modelos/Casos de Uso)  <--  Capa de Datos (Room/Network)
+```
+
+1. **Capa de Presentación**:
+   * **MainActivity & Componentes Bento**: Grid táctico inteligente y adaptativo que optimiza el espacio de pantalla, distribuyendo la telemetría, el centro de control de perfiles y el navegador de forma armónica.
+   * **MainViewModel**: Coordina el flujo continuo de automatización y lectura de datos en hilos de fondo mediante Corrutinas de Kotlin y flujos reactivos (`StateFlow`).
+
+2. **Capa de Dominio (Reglas de Negocio Puras)**:
+   * **Modelos**: `Task`, `LogEntry`, `RpcNode` y el nuevo modelo `Session` (conmutación multi-perfil).
+   * **ResultWrapper**: Contenedor funcional seguro para encapsular operaciones, aislando excepciones en las llamadas de red y persistencia.
+   * **Casos de Uso**: Abstracción pura de procesos como `GetTasksUseCase`, `AddTaskUseCase`, `UpdateTaskUseCase`, `DeleteTaskUseCase` y `QueryRpcNodesUseCase`.
+
+3. **Capa de Datos (Infraestructura)**:
+   * **Room SQLite**: Persiste de forma segura las colas de objetivos y registros locales de telemetría.
+   * **Ghost-Shield Interceptor**: Motor de evasión activa que inyecta de forma dinâmica User-Agents de sistemas reales, enmascara el tráfico simulando enrutamiento proxy Socks5/HTTPS y aplica retardos de mimetización de comportamiento humano ("Human-Like Delay").
+
+---
+
+## 🛡️ ESPECIFICACIONES DEL MÓDULO GHOST-SHIELD
+
+Para evadir auditorías automáticas y bloqueos de red heurísticos (anti-bot) de los proveedores Web3, el módulo **Ghost-Shield** implementa las siguientes contramedidas:
+
+* **Rotación Dinámica de Firmas de Red (User-Agents)**: Cada ciclo de sincronización y solicitud utiliza una cabecera de navegador real diferente (Android, Windows, iOS, Mac).
+* **Mánager de Proxies Residenciales**: Interceptor de red que gestiona túneles de forma dinámica y balancea la conexión hacia un proxy de respaldo en caso de latencia crítica o desconexión del nodo principal.
+* **Human-Like Delay**: Algoritmo asíncrono que introduce latencias pseudo-aleatorias de entre 1200ms y 3200ms en hilos de fondo para romper la regularidad rítmica del tráfico que normalmente delata a los scripts automatizados.
+
+---
+
+## 📁 ESTRUCTURA DE DIRECTORIOS
+
+El código fuente del sistema está estructurado bajo las directrices estrictas de Clean Architecture:
 
 ```text
 /app/src/main/java/com/example/
 │
-├── MainActivity.kt                # Controlador de interfaz principal (Bento Grid)
-├── MainViewModel.kt               # Orquestador reactivo de casos de uso y telemetría
+├── MainActivity.kt                # UI Bento Grid y Navegador Embebido de Alta Fidelidad
+├── MainViewModel.kt               # Orquestador Reactivo y Motor Periódico del Ghost-Shield
 │
-├── data/                          # CAPA DE DATOS
+├── data/                          # CAPA DE DATOS (Infraestructura)
 │   ├── local/
-│   │   ├── AppDatabase.kt         # Instancia segura de base de datos Room
-│   │   ├── TaskEntity.kt          # Esquema local de Tareas
-│   │   ├── LogEntity.kt           # Esquema local de Logs
-│   │   ├── TaskDao.kt             # Consultas SQL para tareas
-│   │   └── LogDao.kt              # Consultas SQL para logs
+│   │   ├── AppDatabase.kt         # Instancia segura de persistencia SQLite (Room)
+│   │   ├── TaskEntity.kt          # Esquema local de Objetivos / Quests
+│   │   ├── LogEntity.kt           # Esquema local de Registros de Telemetría
+│   │   ├── TaskDao.kt             # Métodos de consulta de la cola táctica
+│   │   └── LogDao.kt              # Consultas para registros de auditoría
+│   ├── network/
+│   │   └── GhostShieldInterceptor.kt # Motor de enmascaramiento y evasión heurística
 │   └── repository/
-│       ├── TaskRepositoryImpl.kt  # Implementación de persistencia de tareas
-│       └── LogRepositoryImpl.kt   # Implementación de persistencia de logs
+│       ├── TaskRepositoryImpl.kt  # Mapeo y persistencia física de tareas
+│       └── LogRepositoryImpl.kt   # Mapeo y persistencia física de logs
 │
-├── domain/                        # CAPA DE DOMINIO (Reglas de Negocio)
+├── domain/                        # CAPA DE DOMINIO (Lógica de Negocio Pura)
 │   ├── model/
-│   │   ├── Task.kt                # Modelo puro de tarea
-│   │   ├── LogEntry.kt            # Modelo puro de entrada de log
-│   │   └── RpcNode.kt             # Modelo puro de nodo RPC Web3
+│   │   ├── Task.kt                # Entidad de negocio para tareas tácticas
+│   │   ├── LogEntry.kt            # Modelo de registros de auditoría
+│   │   ├── RpcNode.kt             # Modelo de nodo de consulta Web3
+│   │   ├── Session.kt             # Manejo de Perfiles (ADMIN vs OPERADOR)
+│   │   └── ResultWrapper.kt       # Contenedor seguro de excepciones global
 │   ├── repository/
-│   │   ├── TaskRepository.kt      # Contrato de datos de tareas
-│   │   └── LogRepository.kt       # Contrato de datos de logs
+│   │   ├── TaskRepository.kt      # Contratos de persistencia de tareas
+│   │   └── LogRepository.kt       # Contratos de persistencia de logs
 │   └── usecase/
-│       ├── GetTasksUseCase.kt
+│       ├── GetTasksUseCase.kt     # Casos de uso desacoplados para control CRUD
 │       ├── AddTaskUseCase.kt
 │       ├── UpdateTaskUseCase.kt
 │       ├── DeleteTaskUseCase.kt
 │       ├── GetLogsUseCase.kt
 │       ├── AddLogUseCase.kt
-│       └── QueryRpcNodesUseCase.kt # Monitoreo de redes RPC Web3 de solo lectura
+│       └── QueryRpcNodesUseCase.kt # Monitoreo de latencia de redes Web3 de solo lectura
 │
-└── ui/theme/                      # SISTEMA DE DISEÑO (Material 3)
-    ├── Color.kt                   # Paleta táctica (Obsidian, SlateGray, NeonTeal)
-    ├── Theme.kt                   # Configuración del esquema oscuro
-    └── Type.kt                    # Tipografías y escala de texto
+└── ui/theme/                      # SISTEMA DE DISEÑO (Material 3 Obsidian / Neon Teal)
+    ├── Color.kt                   # Paleta visual táctica de alto contraste para visores nocturnos
+    ├── Theme.kt                   # Configuración del esquema de color oscuro
+    └── Type.kt                    # Escala tipográfica y fuentes monoespaciadas
 ```
 
 ---
 
-## ⚡ MÓDULOS INCLUIDOS Y DISEÑO BENTO
+## 🚀 MANUAL DE DESPLIEGUE EN ENTORNOS DISTRIBUIDOS (TERMUX)
 
-La interfaz gráfica se organiza en dos vistas operativas sumamente optimizadas:
+Si deseas levantar el servidor local de base de datos adicional y sincronización remota dentro del mismo dispositivo Android usando Termux, sigue este procedimiento de despliegue militar:
 
-### 🖥️ Vista "DEV" (Modo Arquitecto)
-*   **Telemetría de Recursos**: Gráficos interactivos de barra lineal que representan el consumo asíncrono de RAM y CPU en tiempo real.
-*   **Estado de la Base de Datos**: Inspección en tiempo real de los registros persistidos en SQLite encriptado.
-*   **Monitoreo de Nodos RPC**: Latencia medida en milisegundos y altura del bloque actual de redes de prueba (Ethereum Sepolia, Arbitrum Sepolia, Optimism Sepolia, Base Sepolia) con banderas de color dinámicas según la velocidad de la red.
-*   **Terminal de Logs**: Visor integrado autoscrollable para rastrear cada paso de automatización completado de manera autónoma.
+### 1. Preparación del Sistema Operativo
+Instala las dependencias y librerías criptográficas esenciales en Termux:
+```bash
+pkg update && pkg upgrade -y
+pkg install nodejs ts-node sqlite openssl -y
+```
 
-### 👩‍💻 Vista "OPERATOR" (Modo María)
-*   **Gestor de Perfil**: Edición local del nombre de usuario y rango asignado en la consola Nexus.
-*   **Cola de Tareas (CRUD)**: Creación instantánea de objetivos (Quests, DePIN, Testnets) con categorización dinámica por etiquetas de color tácticas, posibilidad de marcarlas como completadas o purgarlas.
-*   **Explorador Web3 Integrado**: Un componente WebView embebido que cuenta con controles de navegación estándar y accesos directos a exploradores oficiales para interactuar directamente sin salir del panel.
+### 2. Clonación y Configuración del Backend Local
+Descarga la rama oficial y prepara las variables de entorno para el túnel local:
+```bash
+git clone https://github.com/tu-usuario/syntropy-delta-nexus-omni.git
+cd syntropy-delta-nexus-omni/backend
+npm install
+```
+
+### 3. Ficheros de Configuración de Seguridad (`.env`)
+Configura el puerto y la firma criptográfica JWT para evitar infiltraciones:
+```env
+PORT=3000
+DATABASE_URL="file:./omni_secure.db"
+JWT_SECRET="syntropy_military_grade_key_2026"
+```
+
+### 4. Inicialización de Persistencia Prisma
+Ejecuta la migración estructural de la base de datos de respaldo local:
+```bash
+npx prisma db push
+```
+
+### 5. Configuración de PM2 para Alta Disponibilidad 24/7
+Garantiza que el servidor continúe en ejecución persistente en segundo plano de manera ininterrumpida:
+```bash
+npm install -g pm2
+pm2 start src/server.ts --interpreter ts-node --name "omni-backend"
+pm2 save
+pm2 startup
+```
 
 ---
 
-## 🚀 INSTRUCCIONES DE DESPLIEGUE EN TERMUX (ANDROID)
+## ⛓️ INTEGRACIÓN DE CI/CD CON GITHUB ACTIONS
 
-Si deseas ejecutar un backend local de Node.js adicional dentro del entorno de Android (Termux) que interactúe con el cliente, sigue estos pasos:
+El sistema incluye un pipeline automatizado de integración y despliegue continuo localizado en `.github/workflows/ci-cd.yml` el cual realiza de forma autónoma:
 
-1.  **Instalar dependencias necesarias en Termux**:
-    ```bash
-    pkg update && pkg upgrade
-    pkg install nodejs ts-node sqlite openssl -y
-    ```
-
-2.  **Clonar el repositorio y configurar el backend**:
-    ```bash
-    git clone https://github.com/tu-usuario/syntropy-delta-nexus.git
-    cd syntropy-delta-nexus/backend
-    npm install
-    ```
-
-3.  **Configurar Variables de Entorno**:
-    Crea un archivo `.env` con las credenciales necesarias:
-    ```env
-    PORT=3000
-    DATABASE_URL="file:./dev.db"
-    JWT_SECRET="syntropy_security_key_2026"
-    ```
-
-4.  **Iniciar Base de Datos local con Prisma**:
-    ```bash
-    npx prisma db push
-    ```
-
-5.  **Correr el Servidor mediante PM2 para estabilidad 24/7**:
-    ```bash
-    npm install -g pm2
-    pm2 start src/server.ts --interpreter ts-node --name "delta-nexus-backend"
-    pm2 save
-    pm2 startup
-    ```
-
-El backend local estará listo y expuesto en `http://localhost:3000` listo para procesar colas de trabajo o responder a integraciones con el cliente móvil de Android.
+1. **Checkout automático** de la rama activa.
+2. **Setup de JDK 17** (Temurin distribution).
+3. **Ejecución de Suite de Test Unitarios** en entornos JVM aislados para el cliente Android.
+4. **Ensamblado del APK** (`./gradlew assembleDebug`).
+5. **Carga automática de artefactos** para descarga y auditoría inmediata del binario compilado.

@@ -1,6 +1,6 @@
 {
-  "name": "Syntropy Delta Nexus",
-  "description": "Local productivity and data monitoring tool.",
+  "name": "Syntropy Delta Nexus OMNI",
+  "description": "Sistema operativo de gestión táctica y telemetría descentralizada Web3 de alta disponibilidad.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

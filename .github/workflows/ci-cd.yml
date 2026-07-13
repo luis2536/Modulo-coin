@@ -1,0 +1,75 @@
+name: Syntropy Delta Nexus OMNI - CI/CD
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  validate-android:
+    name: Compilación y Pruebas Unitarias (Android Client)
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout del Repositorio
+      uses: actions/checkout@v4
+
+    - name: Configurar Java Development Kit (JDK) 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Conceder Permisos de Ejecución a Gradle
+      run: chmod +x gradlew
+      continue-on-error: true
+
+    - name: Ejecutar Pruebas Unitarias Locales
+      run: ./gradlew testDebugUnitTest --continue
+
+    - name: Compilar APK en modo de Depuración (Debug Build)
+      run: ./gradlew assembleDebug
+
+    - name: Cargar Artefacto de Compilación
+      uses: actions/upload-artifact@v4
+      with:
+        name: syntropy-delta-nexus-omni-debug-apk
+        path: app/build/outputs/apk/debug/app-debug.apk
+
+  validate-backend:
+    name: Auditoría y Pruebas (Node.js Backend)
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout del Repositorio
+      uses: actions/checkout@v4
+
+    - name: Configurar Entorno de Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Instalar Dependencias del Backend
+      run: |
+        if [ -f "backend/package.json" ]; then
+          cd backend
+          npm ci
+        else
+          echo "No se detectó un package.json en el directorio backend. Omitiendo instalación."
+        fi
+
+    - name: Ejecutar Auditoría Estática (Linter)
+      run: |
+        if [ -f "backend/package.json" ]; then
+          cd backend
+          npm run lint --if-present
+        fi
+
+    - name: Ejecutar Suite de Pruebas Unitarias (Jest)
+      run: |
+        if [ -f "backend/package.json" ]; then
+          cd backend
+          npm test --if-present
+        fi
