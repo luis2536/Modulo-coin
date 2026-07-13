@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -106,6 +107,16 @@ fun SyntropyDeltaNexusApp(viewModel: MainViewModel = viewModel()) {
                     containerColor = Obsidian
                 ),
                 actions = {
+                    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+                    val alpha by infiniteTransition.animateFloat(
+                        initialValue = 0.3f,
+                        targetValue = 1f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(800, easing = FastOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "alpha"
+                    )
                     Row(
                         modifier = Modifier
                             .padding(end = 8.dp)
@@ -114,7 +125,7 @@ fun SyntropyDeltaNexusApp(viewModel: MainViewModel = viewModel()) {
                             .padding(horizontal = 6.dp, vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(NeonGreen))
+                        Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(NeonGreen.copy(alpha = alpha)))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "GHOST: ACTIVO",
@@ -123,7 +134,7 @@ fun SyntropyDeltaNexusApp(viewModel: MainViewModel = viewModel()) {
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = FontFamily.Monospace
                             ),
-                            color = NeonGreen
+                            color = NeonGreen.copy(alpha = alpha)
                         )
                     }
                 }
@@ -432,7 +443,7 @@ fun OperatorModeLayout(
 
         // Cola de Tareas
         item(span = { GridItemSpan(2) }) {
-            BentoCard(titulo = "COLA DE OBJETIVOS (QUESTS)", icono = Icons.Default.FormatListBulleted, colorAcunado = NeonTeal) {
+            BentoCard(titulo = "COLA DE OBJETIVOS (QUESTS)", icono = Icons.AutoMirrored.Filled.FormatListBulleted, colorAcunado = NeonTeal) {
                 Column {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         OutlinedTextField(
