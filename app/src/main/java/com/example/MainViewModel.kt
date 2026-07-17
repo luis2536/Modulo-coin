@@ -23,7 +23,8 @@ class MainViewModel(
     taskRepository: TaskRepository,
     private val logRepository: LogRepository,
     private val queryRpcNodesUseCase: QueryRpcNodesUseCase,
-    private val ghostShield: GhostShieldInterceptor
+    private val ghostShield: GhostShieldInterceptor,
+    private val analyzeThreatsUseCase: AnalyzeThreatsUseCase
 ) : ViewModel() {
 
     // Capa de Dominio (Casos de Uso)
@@ -73,6 +74,9 @@ class MainViewModel(
     private val _vistaActual = MutableStateFlow("DEV") // "DEV" (Modo Arquitecto) o "OPERATOR" (Modo María)
     val vistaActual: StateFlow<String> = _vistaActual.asStateFlow()
 
+    private val _analisisMilitar = MutableStateFlow<ResultWrapper<String>>(ResultWrapper.Success("AI en espera de comandos tácticos."))
+    val analisisMilitar: StateFlow<ResultWrapper<String>> = _analisisMilitar.asStateFlow()
+
     init {
         viewModelScope.launch {
             agregarLog("Iniciando Módulo de Seguridad Ghost-Shield...")
@@ -112,6 +116,21 @@ class MainViewModel(
             _proxySalud.value = ghostShield.obtenerSaludProxy()
             _userAgentActivo.value = ghostShield.rotarUserAgent()
             agregarLog("Comando manual: Proxy conmutado preventivamente a -> $nuevoProxy")
+        }
+    }
+
+    fun ejecutarAnalisisInteligencia() {
+        viewModelScope.launch {
+            agregarLog("Solicitando análisis táctico AI a Gemini...")
+            val listadoLogs = logs.value.map { it.mensaje }.takeLast(20)
+            analyzeThreatsUseCase(listadoLogs).collect { result ->
+                _analisisMilitar.value = result
+                if (result is ResultWrapper.Success) {
+                    agregarLog("Análisis táctico completado con éxito.")
+                } else if (result is ResultWrapper.Error) {
+                    agregarLog("Falla en análisis AI: ${result.mensaje}")
+                }
+            }
         }
     }
 

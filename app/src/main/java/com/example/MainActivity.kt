@@ -223,13 +223,16 @@ fun SyntropyDeltaNexusApp(viewModel: MainViewModel = koinViewModel()) {
                         onRotarProxy = { viewModel.rotarProxyManualmente() }
                     )
                 } else {
+                    val analisis by viewModel.analisisMilitar.collectAsState()
                     OperatorModeLayout(
                         tareas = tareas,
                         sesionActiva = sesionActiva,
+                        analisisMilitar = analisis,
                         onAgregarTarea = { t, d -> viewModel.agregarTarea(t, d) },
                         onToggleTarea = { viewModel.conmutarEstadoTarea(it) },
                         onEliminarTarea = { viewModel.eliminarTarea(it) },
                         onCambiarRol = { viewModel.cambiarSesion(it) },
+                        onEjecutarAnalisis = { viewModel.ejecutarAnalisisInteligencia() },
                         urlActual = urlActual,
                         onUrlCambiada = { urlActual = it },
                         cargandoWeb = cargandoWeb,
@@ -402,10 +405,12 @@ fun DevModeLayout(
 fun OperatorModeLayout(
     tareas: List<Task>,
     sesionActiva: com.example.domain.model.Session,
+    analisisMilitar: com.example.domain.model.ResultWrapper<String>,
     onAgregarTarea: (String, String) -> Unit,
     onToggleTarea: (Task) -> Unit,
     onEliminarTarea: (Task) -> Unit,
     onCambiarRol: (RolOperativo) -> Unit,
+    onEjecutarAnalisis: () -> Unit,
     urlActual: String,
     onUrlCambiada: (String) -> Unit,
     cargandoWeb: Boolean,
@@ -443,6 +448,46 @@ fun OperatorModeLayout(
                     Column {
                         Text(sesionActiva.nombreUsuario, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
                         Text("Acceso: ${sesionActiva.rol.name} | Clave: ${sesionActiva.llaveCifrada}", style = MaterialTheme.typography.labelSmall, color = TextSecondary, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+                    }
+                }
+            }
+        }
+
+        // Inteligencia Artificial (Gemini)
+        item(span = { GridItemSpan(2) }) {
+            BentoCard(
+                titulo = "INTELIGENCIA TÁCTICA OMNI (GEMINI AI)",
+                icono = Icons.Default.SmartToy,
+                colorAcunado = NeonAmber,
+                accionExtra = {
+                    Button(
+                        onClick = onEjecutarAnalisis,
+                        colors = ButtonDefaults.buttonColors(containerColor = NeonAmber, contentColor = Obsidian),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                        shape = RoundedCornerShape(6.dp),
+                        modifier = Modifier.height(24.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.AutoFixHigh, contentDescription = null, modifier = Modifier.size(10.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("EJECUTAR ANÁLISIS", style = MaterialTheme.typography.labelSmall, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            ) {
+                Box(modifier = Modifier.fillMaxWidth().background(DarkPurple, RoundedCornerShape(6.dp)).border(1.dp, BorderColor, RoundedCornerShape(6.dp)).padding(8.dp)) {
+                    when (analisisMilitar) {
+                        is com.example.domain.model.ResultWrapper.Loading -> {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(color = NeonAmber, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Procesando inteligencia AI...", style = MaterialTheme.typography.bodySmall, color = NeonAmber)
+                            }
+                        }
+                        is com.example.domain.model.ResultWrapper.Success -> {
+                            Text(analisisMilitar.data, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 10.sp), color = TextPrimary)
+                        }
+                        is com.example.domain.model.ResultWrapper.Error -> {
+                            Text(analisisMilitar.mensaje, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 10.sp), color = NeonRed)
+                        }
                     }
                 }
             }
