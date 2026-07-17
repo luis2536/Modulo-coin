@@ -2,6 +2,8 @@ package com.example.data.network
 
 import com.example.domain.model.ResultWrapper
 import kotlinx.coroutines.delay
+import okhttp3.Interceptor
+import okhttp3.Response
 import kotlin.random.Random
 
 /**
@@ -9,7 +11,7 @@ import kotlin.random.Random
  * Realiza rotación dinámica de cabeceras User-Agent, simulación de enrutado por proxy y
  * añade retrasos asíncronos pseudo-aleatorios (Human-Like Delay) para mimetizar comportamientos humanos.
  */
-class GhostShieldInterceptor {
+class GhostShieldInterceptor : Interceptor {
 
     private val userAgents = listOf(
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
@@ -45,6 +47,27 @@ class GhostShieldInterceptor {
 
     fun obtenerProxyActivo(): String = proxyActual
     fun obtenerSaludProxy(): String = proxySalud
+
+    /**
+     * Implementación oficial de OkHttp Interceptor.
+     */
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val originalRequest = chain.request()
+        
+        // Simulación de Thread.sleep (retardo síncrono para OkHttp)
+        val delayMs = Random.nextLong(200, 800)
+        try { Thread.sleep(delayMs) } catch (e: Exception) {}
+
+        val userAgent = rotarUserAgent()
+        
+        val modifiedRequest = originalRequest.newBuilder()
+            .header("User-Agent", userAgent)
+            .header("X-Syntropy-Nexus-Shield", "AES-256-GCM")
+            .header("Via", proxyActual)
+            .build()
+            
+        return chain.proceed(modifiedRequest)
+    }
 
     /**
      * Aplica el retardo pseudo-aleatorio "Human-Like Delay" para burlar sistemas de auditoría automatizados.

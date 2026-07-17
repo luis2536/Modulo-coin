@@ -43,6 +43,13 @@ import com.example.domain.model.RpcNode
 import com.example.domain.model.Task
 import com.example.ui.theme.*
 
+import org.koin.androidx.compose.koinViewModel
+
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.foundation.Canvas
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,7 +64,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SyntropyDeltaNexusApp(viewModel: MainViewModel = viewModel()) {
+fun SyntropyDeltaNexusApp(viewModel: MainViewModel = koinViewModel()) {
     val vistaActual by viewModel.vistaActual.collectAsState()
     val tareas by viewModel.tareas.collectAsState()
     val logs by viewModel.logs.collectAsState()
@@ -268,16 +275,16 @@ fun DevModeLayout(
                         Text("Memoria RAM:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                         Text(ramMetric, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = NeonTeal)
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    LinearProgressIndicator(progress = { 0.35f }, modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)), color = NeonTeal, trackColor = BorderColor)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
+                    CyberPulseBar(progress = 0.35f, color = NeonTeal, modifier = Modifier.fillMaxWidth().height(6.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Procesador CPU:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                         Text(cpuMetric, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = NeonTeal)
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    LinearProgressIndicator(progress = { 0.12f }, modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)), color = NeonTeal, trackColor = BorderColor)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
+                    CyberPulseBar(progress = 0.12f, color = NeonTeal, modifier = Modifier.fillMaxWidth().height(6.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Ancho de Banda:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                         Text(redMetric, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = NeonGreen)
@@ -558,6 +565,51 @@ fun BentoCard(
             }
             Spacer(modifier = Modifier.height(8.dp))
             contenido()
+        }
+    }
+}
+
+@Composable
+fun CyberPulseBar(progress: Float, color: Color, modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+
+    Canvas(modifier = modifier.fillMaxWidth().height(8.dp)) {
+        val width = size.width
+        val height = size.height
+        val progressWidth = width * progress
+
+        // Track (Fondo)
+        drawRoundRect(
+            color = BorderColor,
+            size = Size(width, height),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(height / 2)
+        )
+
+        // Progress (Brillante)
+        if (progressWidth > 0) {
+            drawRoundRect(
+                color = color.copy(alpha = alpha),
+                size = Size(progressWidth, height),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(height / 2)
+            )
+        }
+        
+        // Puntos de pulso
+        if (progressWidth > 4.dp.toPx()) {
+            drawCircle(
+                color = Color.White,
+                radius = height / 3,
+                center = Offset(progressWidth - height / 2, height / 2)
+            )
         }
     }
 }

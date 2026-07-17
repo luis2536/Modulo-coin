@@ -1,14 +1,12 @@
 package com.example
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.data.local.AppDatabase
 import com.example.data.network.GhostShieldInterceptor
-import com.example.data.repository.LogRepositoryImpl
-import com.example.data.repository.TaskRepositoryImpl
 import com.example.domain.model.*
 import com.example.domain.usecase.*
+import com.example.domain.repository.TaskRepository
+import com.example.domain.repository.LogRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -21,13 +19,12 @@ import kotlin.random.Random
  * Actúa como orquestador táctico de telemetría militar, estado del sistema,
  * perfiles de sesión y el escudo "Ghost-Shield" para misiones Web3 en español.
  */
-class MainViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val db = AppDatabase.getDatabase(application)
-    
-    // Capa de Datos (Repisitorios seguros)
-    private val taskRepository = TaskRepositoryImpl(db.taskDao())
-    private val logRepository = LogRepositoryImpl(db.logDao())
+class MainViewModel(
+    taskRepository: TaskRepository,
+    private val logRepository: LogRepository,
+    private val queryRpcNodesUseCase: QueryRpcNodesUseCase,
+    private val ghostShield: GhostShieldInterceptor
+) : ViewModel() {
 
     // Capa de Dominio (Casos de Uso)
     private val getTasksUseCase = GetTasksUseCase(taskRepository)
@@ -36,10 +33,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val deleteTaskUseCase = DeleteTaskUseCase(taskRepository)
     private val getLogsUseCase = GetLogsUseCase(logRepository)
     private val addLogUseCase = AddLogUseCase(logRepository)
-    private val queryRpcNodesUseCase = QueryRpcNodesUseCase()
-
-    // Capa de Red (Módulo Ghost-Shield)
-    private val ghostShield = GhostShieldInterceptor()
 
     // Estado del Sistema expuesto de forma reactiva (Flows)
     val tareas: StateFlow<List<Task>> = getTasksUseCase()
