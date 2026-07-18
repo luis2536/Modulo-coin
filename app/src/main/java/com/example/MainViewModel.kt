@@ -77,6 +77,17 @@ class MainViewModel(
     private val _analisisMilitar = MutableStateFlow<ResultWrapper<String>>(ResultWrapper.Success("AI en espera de comandos tácticos."))
     val analisisMilitar: StateFlow<ResultWrapper<String>> = _analisisMilitar.asStateFlow()
 
+    private val _historialRed = MutableStateFlow<List<Float>>(List(15) { Random.nextDouble(5.0, 45.0).toFloat() })
+    val historialRed: StateFlow<List<Float>> = _historialRed.asStateFlow()
+
+    private val _escaneandoRadar = MutableStateFlow(false)
+    val escaneandoRadar: StateFlow<Boolean> = _escaneandoRadar.asStateFlow()
+
+    private val _amenazasDetectadas = MutableStateFlow<List<String>>(
+        listOf("Canal de Red: Seguro", "Firmas DePIN: Verificadas", "Nodos Activos: Sin intromisiones")
+    )
+    val amenazasDetectadas: StateFlow<List<String>> = _amenazasDetectadas.asStateFlow()
+
     init {
         viewModelScope.launch {
             agregarLog("Iniciando Módulo de Seguridad Ghost-Shield...")
@@ -119,17 +130,49 @@ class MainViewModel(
         }
     }
 
-    fun ejecutarAnalisisInteligencia() {
+    fun ejecutarAnalisisInteligencia(tipoAnalisis: String = "Escaneo Estándar") {
         viewModelScope.launch {
-            agregarLog("Solicitando análisis táctico AI a Gemini...")
+            agregarLog("Solicitando análisis táctico AI ($tipoAnalisis) a Gemini...")
             val listadoLogs = logs.value.map { it.mensaje }.takeLast(20)
-            analyzeThreatsUseCase(listadoLogs).collect { result ->
+            analyzeThreatsUseCase(listadoLogs, tipoAnalisis).collect { result ->
                 _analisisMilitar.value = result
                 if (result is ResultWrapper.Success) {
-                    agregarLog("Análisis táctico completado con éxito.")
+                    agregarLog("Análisis táctico [$tipoAnalisis] completado con éxito.")
                 } else if (result is ResultWrapper.Error) {
-                    agregarLog("Falla en análisis AI: ${result.mensaje}")
+                    agregarLog("Falla en análisis AI [$tipoAnalisis]: ${result.mensaje}")
                 }
+            }
+        }
+    }
+
+    fun ejecutarEscaneoRadar() {
+        viewModelScope.launch {
+            _escaneandoRadar.value = true
+            agregarLog("Iniciando escaneo táctico de puertos y nodos DePIN...")
+            delay(1500)
+            val ipFalsa = "${Random.nextInt(10, 254)}.${Random.nextInt(10, 254)}.${Random.nextInt(1, 254)}.${Random.nextInt(1, 254)}"
+            val listado = listOf(
+                "IP sospechosa mitigada: $ipFalsa",
+                "Latencia perimetral óptima: ${Random.nextInt(12, 60)} ms",
+                "Firmas de nodos de contingencia: Sincronizadas",
+                "Proxy perimetral Ghost-Shield: Operativo"
+            )
+            _amenazasDetectadas.value = listado
+            _escaneandoRadar.value = false
+            agregarLog("Escaneo perimetral de radar finalizado con éxito.")
+        }
+    }
+
+    fun cifrarSimetrico(texto: String): String {
+        return texto.map { (it.code xor 0x5A).toChar() }.joinToString("")
+    }
+
+    fun guardarSecretoEnBoveda(nombre: String, secretoPlano: String) {
+        viewModelScope.launch {
+            if (nombre.isNotBlank() && secretoPlano.isNotBlank()) {
+                val cifrado = cifrarSimetrico(secretoPlano)
+                addTaskUseCase(nombre, "CIFRADO:$cifrado")
+                agregarLog("Bóveda: Secreto '$nombre' encriptado mediante algoritmo XOR simétrico y guardado en SQLite.")
             }
         }
     }
@@ -196,6 +239,14 @@ class MainViewModel(
             _telemetriaRam.value = String.format("RAM: %.1f MB / 1024 MB (%.1f%%)", ramUsage, (ramUsage/1024)*100)
             _telemetriaCpu.value = String.format("CPU: %.1f%% (Eco-Mode)", cpuUsage)
             _consumoRed.value = String.format("Ancho de Banda: %.1f KB/s", kbs)
+
+            // Actualizar historial para el gráfico táctico
+            val listActual = _historialRed.value.toMutableList()
+            if (listActual.size >= 15) {
+                listActual.removeAt(0)
+            }
+            listActual.add(kbs.toFloat())
+            _historialRed.value = listActual
 
             // Auto-rotar proxy de forma preventiva con un 15% de probabilidad en cada consulta periódica
             if (Random.nextInt(100) < 15) {

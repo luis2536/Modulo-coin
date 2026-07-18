@@ -72,6 +72,7 @@ fun SyntropyDeltaNexusApp(viewModel: MainViewModel = koinViewModel()) {
     val ramMetric by viewModel.telemetriaRam.collectAsState()
     val cpuMetric by viewModel.telemetriaCpu.collectAsState()
     val redMetric by viewModel.consumoRed.collectAsState()
+    val historialRed by viewModel.historialRed.collectAsState()
 
     // Datos de Seguridad Ghost-Shield
     val proxyActivo by viewModel.proxyActivo.collectAsState()
@@ -84,6 +85,9 @@ fun SyntropyDeltaNexusApp(viewModel: MainViewModel = koinViewModel()) {
     // Estado del Navegador Web3
     var urlActual by remember { mutableStateOf("https://sepolia.etherscan.io") }
     var cargandoWeb by remember { mutableStateOf(false) }
+
+    val escaneandoRadar by viewModel.escaneandoRadar.collectAsState()
+    val amenazasDetectadas by viewModel.amenazasDetectadas.collectAsState()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -213,12 +217,16 @@ fun SyntropyDeltaNexusApp(viewModel: MainViewModel = koinViewModel()) {
                         ramMetric = ramMetric,
                         cpuMetric = cpuMetric,
                         redMetric = redMetric,
+                        historialRed = historialRed,
                         proxyActivo = proxyActivo,
                         proxySalud = proxySalud,
                         userAgentActivo = userAgentActivo,
                         nodosRpc = nodosRpc,
                         logs = logs,
                         tareasCount = tareas.size,
+                        escaneandoRadar = escaneandoRadar,
+                        amenazasDetectadas = amenazasDetectadas,
+                        onEjecutarEscaneo = { viewModel.ejecutarEscaneoRadar() },
                         onLimpiarLogs = { viewModel.limpiarHistorialLogs() },
                         onRotarProxy = { viewModel.rotarProxyManualmente() }
                     )
@@ -232,7 +240,9 @@ fun SyntropyDeltaNexusApp(viewModel: MainViewModel = koinViewModel()) {
                         onToggleTarea = { viewModel.conmutarEstadoTarea(it) },
                         onEliminarTarea = { viewModel.eliminarTarea(it) },
                         onCambiarRol = { viewModel.cambiarSesion(it) },
-                        onEjecutarAnalisis = { viewModel.ejecutarAnalisisInteligencia() },
+                        onEjecutarAnalisis = { viewModel.ejecutarAnalisisInteligencia(it) },
+                        onGuardarSecreto = { nom, sec -> viewModel.guardarSecretoEnBoveda(nom, sec) },
+                        cifrarSimetrico = { viewModel.cifrarSimetrico(it) },
                         urlActual = urlActual,
                         onUrlCambiada = { urlActual = it },
                         cargandoWeb = cargandoWeb,
@@ -252,12 +262,16 @@ fun DevModeLayout(
     ramMetric: String,
     cpuMetric: String,
     redMetric: String,
+    historialRed: List<Float>,
     proxyActivo: String,
     proxySalud: String,
     userAgentActivo: String,
     nodosRpc: List<RpcNode>,
     logs: List<LogEntry>,
     tareasCount: Int,
+    escaneandoRadar: Boolean,
+    amenazasDetectadas: List<String>,
+    onEjecutarEscaneo: () -> Unit,
     onLimpiarLogs: () -> Unit,
     onRotarProxy: () -> Unit
 ) {
@@ -272,7 +286,7 @@ fun DevModeLayout(
     ) {
         // Telemetría de Recursos
         item(span = { GridItemSpan(2) }) {
-            BentoCard(titulo = "TELEMETRÍA DE RECURSOS", icono = Icons.Default.Dns, colorAcunado = NeonTeal) {
+            BentoCard(titulo = "TELEMETRÍA DE RECURSOS DEL SISTEMA", icono = Icons.Default.Dns, colorAcunado = NeonTeal) {
                 Column {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Memoria RAM:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
@@ -296,10 +310,29 @@ fun DevModeLayout(
             }
         }
 
+        // Gráfico de Tráfico Táctico (Análisis 3D)
+        item(span = { GridItemSpan(2) }) {
+            BentoCard(titulo = "ANÁLISIS GRÁFICO DE TRÁFICO TÁCTICO", icono = Icons.Default.Timeline, colorAcunado = NeonTeal) {
+                Column {
+                    Text(
+                        "FLUJO DE DATOS DE RED EN TIEMPO REAL (DePIN)",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold),
+                        color = TextSecondary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TacticalAreaChart(
+                        dataPoints = historialRed,
+                        modifier = Modifier.fillMaxWidth().height(80.dp),
+                        lineColor = NeonTeal
+                    )
+                }
+            }
+        }
+
         // Módulo Ghost-Shield
         item(span = { GridItemSpan(2) }) {
             BentoCard(
-                titulo = "PROTECCIÓN GHOST-SHIELD",
+                titulo = "PROTECCIÓN PERIMETRAL GHOST-SHIELD",
                 icono = Icons.Default.Shield,
                 colorAcunado = NeonGreen,
                 accionExtra = {
@@ -312,17 +345,17 @@ fun DevModeLayout(
             ) {
                 Column {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Proxy SOCKS5:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        Text("Proxy SOCKS5 de Red:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                         Text(proxyActivo, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace), color = TextPrimary)
                     }
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Estado de Canal:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        Text("Canal Seguro de Datos:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                         Text(proxySalud, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = if (proxySalud == "CRÍTICO") NeonRed else NeonGreen)
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Box(modifier = Modifier.fillMaxWidth().background(BorderColor, RoundedCornerShape(4.dp)).padding(6.dp)) {
                         Column {
-                            Text("USER-AGENT ACTIVO:", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 8.sp), color = NeonTeal)
+                            Text("USER-AGENT TÁCTICO ACTIVO:", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 8.sp), color = NeonTeal)
                             Text(userAgentActivo, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 9.sp), color = TextSecondary)
                         }
                     }
@@ -332,7 +365,7 @@ fun DevModeLayout(
 
         // Bloques Blockchain RPC
         item(span = { GridItemSpan(2) }) {
-            BentoCard(titulo = "NODOS BLOCKCHAIN ACTIVOS", icono = Icons.Default.Language, colorAcunado = NeonAmber) {
+            BentoCard(titulo = "NODOS BLOCKCHAIN ACTIVOS (DePIN)", icono = Icons.Default.Language, colorAcunado = NeonAmber) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (nodosRpc.isEmpty()) {
                         CircularProgressIndicator(color = NeonAmber, modifier = Modifier.size(20.dp))
@@ -352,10 +385,71 @@ fun DevModeLayout(
             }
         }
 
+        // NUEVO MÓDULO: Escáner de Amenazas de Red (Radar Táctico)
+        item(span = { GridItemSpan(2) }) {
+            BentoCard(
+                titulo = "ESCÁNER TÁCTICO DE AMENAZAS (RADAR DE RED)",
+                icono = Icons.Default.Sensors,
+                colorAcunado = NeonTeal,
+                accionExtra = {
+                    Button(
+                        onClick = onEjecutarEscaneo,
+                        enabled = !escaneandoRadar,
+                        colors = ButtonDefaults.buttonColors(containerColor = NeonTeal, contentColor = Obsidian),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                        shape = RoundedCornerShape(6.dp),
+                        modifier = Modifier.height(24.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Wifi, contentDescription = null, modifier = Modifier.size(10.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            if (escaneandoRadar) "ESCANEANDO..." else "BARRIDO RADAR",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            ) {
+                Column {
+                    if (escaneandoRadar) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 6.dp)) {
+                            CircularProgressIndicator(color = NeonTeal, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Escaneando firmas de bloques y topologías de red en tiempo real...",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                                color = NeonTeal
+                            )
+                        }
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            amenazasDetectadas.forEach { amenaza ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(if (amenaza.contains("sospechosa") || amenaza.contains("intrusión")) NeonRed else NeonGreen)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = amenaza,
+                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                                        color = TextPrimary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Terminal de Logs
         item(span = { GridItemSpan(2) }) {
             BentoCard(
-                titulo = "REGISTROS DEL SISTEMA",
+                titulo = "REGISTROS DEL SISTEMA (TELEMETRÍA EN VIVO)",
                 icono = Icons.Default.Terminal,
                 colorAcunado = NeonTeal,
                 accionExtra = {
@@ -410,7 +504,9 @@ fun OperatorModeLayout(
     onToggleTarea: (Task) -> Unit,
     onEliminarTarea: (Task) -> Unit,
     onCambiarRol: (RolOperativo) -> Unit,
-    onEjecutarAnalisis: () -> Unit,
+    onEjecutarAnalisis: (String) -> Unit,
+    onGuardarSecreto: (String, String) -> Unit,
+    cifrarSimetrico: (String) -> String,
     urlActual: String,
     onUrlCambiada: (String) -> Unit,
     cargandoWeb: Boolean,
@@ -418,6 +514,17 @@ fun OperatorModeLayout(
 ) {
     var nuevaTareaTitulo by remember { mutableStateOf("") }
     var nuevaTareaDesc by remember { mutableStateOf("General") }
+
+    // Campos para agregar credenciales en la bóveda segura
+    var nuevoSecretoNombre by remember { mutableStateOf("") }
+    var nuevoSecretoValor by remember { mutableStateOf("") }
+
+    // Filtros de tareas y secretos en base de datos SQLite (Room)
+    val tareasGenerales = remember(tareas) { tareas.filter { !it.descripcion.startsWith("CIFRADO:") } }
+    val tareasSecretos = remember(tareas) { tareas.filter { it.descripcion.startsWith("CIFRADO:") } }
+
+    var tipoAnalisisSeleccionado by remember { mutableStateOf("Escaneo Estándar") }
+    var secretoReveladoId by remember { mutableStateOf<Int?>(null) }
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
@@ -429,7 +536,7 @@ fun OperatorModeLayout(
         // Perfil Activo
         item(span = { GridItemSpan(2) }) {
             BentoCard(
-                titulo = "PERFIL OPERADOR NEXUS",
+                titulo = "PERFIL DE OPERADOR NEXUS",
                 icono = Icons.Default.Group,
                 colorAcunado = NeonTeal,
                 accionExtra = {
@@ -447,7 +554,7 @@ fun OperatorModeLayout(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(sesionActiva.nombreUsuario, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
-                        Text("Acceso: ${sesionActiva.rol.name} | Clave: ${sesionActiva.llaveCifrada}", style = MaterialTheme.typography.labelSmall, color = TextSecondary, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+                        Text("Acceso: ${sesionActiva.rol.name} | Clave de Sesión: ${sesionActiva.llaveCifrada}", style = MaterialTheme.typography.labelSmall, color = TextSecondary, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
                     }
                 }
             }
@@ -457,11 +564,11 @@ fun OperatorModeLayout(
         item(span = { GridItemSpan(2) }) {
             BentoCard(
                 titulo = "INTELIGENCIA TÁCTICA OMNI (GEMINI AI)",
-                icono = Icons.Default.SmartToy,
+                icono = Icons.Default.Android,
                 colorAcunado = NeonAmber,
                 accionExtra = {
                     Button(
-                        onClick = onEjecutarAnalisis,
+                        onClick = { onEjecutarAnalisis(tipoAnalisisSeleccionado) },
                         colors = ButtonDefaults.buttonColors(containerColor = NeonAmber, contentColor = Obsidian),
                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
                         shape = RoundedCornerShape(6.dp),
@@ -473,35 +580,177 @@ fun OperatorModeLayout(
                     }
                 }
             ) {
-                Box(modifier = Modifier.fillMaxWidth().background(DarkPurple, RoundedCornerShape(6.dp)).border(1.dp, BorderColor, RoundedCornerShape(6.dp)).padding(8.dp)) {
-                    when (analisisMilitar) {
-                        is com.example.domain.model.ResultWrapper.Loading -> {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                CircularProgressIndicator(color = NeonAmber, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Procesando inteligencia AI...", style = MaterialTheme.typography.bodySmall, color = NeonAmber)
+                Column {
+                    // Selector de tipo de análisis táctico
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        listOf("Escaneo Estándar", "Cripto-Auditoría", "Ruta DePIN").forEach { tipo ->
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(if (tipoAnalisisSeleccionado == tipo) NeonAmber else BorderColor)
+                                    .clickable { tipoAnalisisSeleccionado = tipo }
+                                    .padding(horizontal = 6.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = tipo,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontSize = 8.sp,
+                                    color = if (tipoAnalisisSeleccionado == tipo) Obsidian else TextPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
-                        is com.example.domain.model.ResultWrapper.Success -> {
-                            Text(analisisMilitar.data, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 10.sp), color = TextPrimary)
-                        }
-                        is com.example.domain.model.ResultWrapper.Error -> {
-                            Text(analisisMilitar.mensaje, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 10.sp), color = NeonRed)
+                    }
+
+                    Box(modifier = Modifier.fillMaxWidth().background(DarkPurple, RoundedCornerShape(6.dp)).border(1.dp, BorderColor, RoundedCornerShape(6.dp)).padding(8.dp)) {
+                        when (analisisMilitar) {
+                            is com.example.domain.model.ResultWrapper.Loading -> {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    CircularProgressIndicator(color = NeonAmber, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Procesando inteligencia AI táctica militar...", style = MaterialTheme.typography.bodySmall, color = NeonAmber)
+                                }
+                            }
+                            is com.example.domain.model.ResultWrapper.Success -> {
+                                Text(analisisMilitar.data, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 10.sp), color = TextPrimary)
+                            }
+                            is com.example.domain.model.ResultWrapper.Error -> {
+                                Text(analisisMilitar.mensaje, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 10.sp), color = NeonRed)
+                            }
                         }
                     }
                 }
             }
         }
 
-        // Cola de Tareas
+        // BÓVEDA CRIPTOGRÁFICA DE SEGURIDAD (XOR SECURE ENGINE)
         item(span = { GridItemSpan(2) }) {
-            BentoCard(titulo = "COLA DE OBJETIVOS (QUESTS)", icono = Icons.AutoMirrored.Filled.FormatListBulleted, colorAcunado = NeonTeal) {
+            BentoCard(titulo = "BÓVEDA CRIPTOGRÁFICA DE CREDENCIALES", icono = Icons.Default.Lock, colorAcunado = NeonTeal) {
+                Column {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedTextField(
+                            value = nuevoSecretoNombre,
+                            onValueChange = { nuevoSecretoNombre = it },
+                            label = { Text("Nombre (Ej: Wallet)", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp) },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NeonTeal, focusedLabelColor = NeonTeal),
+                            modifier = Modifier.weight(1f).height(46.dp)
+                        )
+                        OutlinedTextField(
+                            value = nuevoSecretoValor,
+                            onValueChange = { nuevoSecretoValor = it },
+                            label = { Text("Secreto / Clave", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp) },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NeonTeal, focusedLabelColor = NeonTeal),
+                            modifier = Modifier.weight(1f).height(46.dp)
+                        )
+                        Button(
+                            onClick = {
+                                if (nuevoSecretoNombre.isNotBlank() && nuevoSecretoValor.isNotBlank()) {
+                                    onGuardarSecreto(nuevoSecretoNombre, nuevoSecretoValor)
+                                    nuevoSecretoNombre = ""
+                                    nuevoSecretoValor = ""
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = NeonTeal, contentColor = Obsidian),
+                            shape = RoundedCornerShape(6.dp),
+                            modifier = Modifier.height(46.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(14.dp))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    if (tareasSecretos.isEmpty()) {
+                        Text(
+                            text = "No hay claves guardadas en la bóveda militar.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)
+                        )
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            tareasSecretos.forEach { secreto ->
+                                val cifradoPayload = secreto.descripcion.removePrefix("CIFRADO:")
+                                val estaRevelado = secretoReveladoId == secreto.id
+                                val textoAMostrar = if (estaRevelado) cifrarSimetrico(cifradoPayload) else "••••••••••••"
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .border(1.dp, BorderColor, RoundedCornerShape(6.dp))
+                                        .background(SlateGray)
+                                        .padding(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(imageVector = Icons.Default.Key, contentDescription = null, tint = NeonTeal, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = secreto.titulo,
+                                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                            color = TextPrimary
+                                        )
+                                        Text(
+                                            text = "Clave: $textoAMostrar",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontFamily = FontFamily.Monospace,
+                                                color = if (estaRevelado) NeonGreen else TextSecondary
+                                            ),
+                                            fontSize = 9.sp
+                                        )
+                                    }
+                                    
+                                    // Botón para revelar / ocultar secreto
+                                    IconButton(
+                                        onClick = {
+                                            secretoReveladoId = if (estaRevelado) null else secreto.id
+                                        },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (estaRevelado) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                            contentDescription = null,
+                                            tint = NeonTeal,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+
+                                    IconButton(
+                                        onClick = { onEliminarTarea(secreto) },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = null,
+                                            tint = NeonRed,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Cola de Tareas (General Quests)
+        item(span = { GridItemSpan(2) }) {
+            BentoCard(titulo = "COLA DE OBJETIVOS EN COLA (SQLITE)", icono = Icons.AutoMirrored.Filled.FormatListBulleted, colorAcunado = NeonTeal) {
                 Column {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         OutlinedTextField(
                             value = nuevaTareaTitulo,
                             onValueChange = { nuevaTareaTitulo = it },
-                            label = { Text("Agregar tarea en SQLite...", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp) },
+                            label = { Text("Agregar objetivo en base de datos SQLite...", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp) },
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NeonTeal, focusedLabelColor = NeonTeal),
                             modifier = Modifier.weight(1f).height(48.dp).testTag("tarea_titulo_input")
@@ -519,11 +768,11 @@ fun OperatorModeLayout(
                         }
                     }
                     Spacer(modifier = Modifier.height(10.dp))
-                    if (tareas.isEmpty()) {
-                        Text(text = "No hay objetivos registrados.", style = MaterialTheme.typography.bodySmall, color = TextSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp))
+                    if (tareasGenerales.isEmpty()) {
+                        Text(text = "No hay objetivos nominales activos.", style = MaterialTheme.typography.bodySmall, color = TextSecondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp))
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            tareas.take(4).forEach { tarea ->
+                            tareasGenerales.take(4).forEach { tarea ->
                                 Row(modifier = Modifier.fillMaxWidth().border(1.dp, BorderColor, RoundedCornerShape(6.dp)).background(SlateGray).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Checkbox(checked = tarea.completada, onCheckedChange = { onToggleTarea(tarea) }, colors = CheckboxDefaults.colors(checkedColor = NeonTeal), modifier = Modifier.size(24.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
@@ -685,4 +934,93 @@ fun AndroidWebViewComponent(url: String, onCargandoWeb: (Boolean) -> Unit) {
         },
         modifier = Modifier.fillMaxSize()
     )
+}
+
+@Composable
+fun TacticalAreaChart(
+    dataPoints: List<Float>,
+    modifier: Modifier = Modifier,
+    lineColor: Color = NeonTeal,
+    gridColor: Color = BorderColor.copy(alpha = 0.2f)
+) {
+    Canvas(modifier = modifier) {
+        val width = size.width
+        val height = size.height
+        
+        // Dibujar rejilla táctica (Grid de fondo)
+        val gridLinesX = 6
+        for (i in 0..gridLinesX) {
+            val x = width * i / gridLinesX
+            drawLine(
+                color = gridColor,
+                start = Offset(x, 0f),
+                end = Offset(x, height),
+                strokeWidth = 1f
+            )
+        }
+        val gridLinesY = 4
+        for (i in 0..gridLinesY) {
+            val y = height * i / gridLinesY
+            drawLine(
+                color = gridColor,
+                start = Offset(0f, y),
+                end = Offset(width, y),
+                strokeWidth = 1f
+            )
+        }
+
+        if (dataPoints.size < 2) return@Canvas
+
+        val maxVal = dataPoints.maxOrNull()?.coerceAtLeast(10f) ?: 10f
+        val minVal = 0f
+        val range = maxVal - minVal
+
+        val points = dataPoints.mapIndexed { index, value ->
+            val x = width * index / (dataPoints.size - 1)
+            val y = height - ((value - minVal) / range) * height
+            Offset(x, y)
+        }
+
+        // Sombreado bajo la curva (Gradiente 3D)
+        val fillPath = androidx.compose.ui.graphics.Path().apply {
+            moveTo(points.first().x, height)
+            points.forEach { lineTo(it.x, it.y) }
+            lineTo(points.last().x, height)
+            close()
+        }
+
+        drawPath(
+            path = fillPath,
+            brush = Brush.verticalGradient(
+                colors = listOf(lineColor.copy(alpha = 0.35f), Color.Transparent),
+                startY = points.map { it.y }.minOrNull() ?: 0f,
+                endY = height
+            )
+        )
+
+        // Línea principal brillante
+        for (i in 0 until points.size - 1) {
+            drawLine(
+                color = lineColor,
+                start = points[i],
+                end = points[i + 1],
+                strokeWidth = 2.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+        }
+
+        // Punto de pulso del último dato registrado
+        val lastPoint = points.last()
+        drawCircle(
+            color = Color.White,
+            radius = 4.dp.toPx(),
+            center = lastPoint
+        )
+        drawCircle(
+            color = lineColor,
+            radius = 7.dp.toPx(),
+            center = lastPoint,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
+        )
+    }
 }

@@ -38,7 +38,7 @@ val appModule = module {
     // AI Configuration
     single { 
         GenerativeModel(
-            modelName = "gemini-1.5-flash",
+            modelName = "gemini-3.5-flash",
             apiKey = BuildConfig.GEMINI_API_KEY,
             generationConfig = generationConfig {
                 temperature = 0.2f
