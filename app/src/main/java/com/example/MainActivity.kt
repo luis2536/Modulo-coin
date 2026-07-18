@@ -232,10 +232,13 @@ fun SyntropyDeltaNexusApp(viewModel: MainViewModel = koinViewModel()) {
                     )
                 } else {
                     val analisis by viewModel.analisisMilitar.collectAsState()
+                    val generandoReporte by viewModel.generandoReporte.collectAsState()
                     OperatorModeLayout(
                         tareas = tareas,
                         sesionActiva = sesionActiva,
                         analisisMilitar = analisis,
+                        generandoReporte = generandoReporte,
+                        onGenerarYGuardarReporte = { nom, inc -> viewModel.generarYGuardarReporteInteligencia(nom, inc) },
                         onAgregarTarea = { t, d -> viewModel.agregarTarea(t, d) },
                         onToggleTarea = { viewModel.conmutarEstadoTarea(it) },
                         onEliminarTarea = { viewModel.eliminarTarea(it) },
@@ -500,6 +503,8 @@ fun OperatorModeLayout(
     tareas: List<Task>,
     sesionActiva: com.example.domain.model.Session,
     analisisMilitar: com.example.domain.model.ResultWrapper<String>,
+    generandoReporte: Boolean,
+    onGenerarYGuardarReporte: (String, String) -> Unit,
     onAgregarTarea: (String, String) -> Unit,
     onToggleTarea: (Task) -> Unit,
     onEliminarTarea: (Task) -> Unit,
@@ -518,6 +523,10 @@ fun OperatorModeLayout(
     // Campos para agregar credenciales en la bóveda segura
     var nuevoSecretoNombre by remember { mutableStateOf("") }
     var nuevoSecretoValor by remember { mutableStateOf("") }
+
+    // Campos para generar y encriptar reportes de incidentes por AI
+    var reporteIncidenteNombre by remember { mutableStateOf("") }
+    var reporteIncidenteDetalle by remember { mutableStateOf("") }
 
     // Filtros de tareas y secretos en base de datos SQLite (Room)
     val tareasGenerales = remember(tareas) { tareas.filter { !it.descripcion.startsWith("CIFRADO:") } }
@@ -622,6 +631,60 @@ fun OperatorModeLayout(
                             is com.example.domain.model.ResultWrapper.Error -> {
                                 Text(analisisMilitar.mensaje, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 10.sp), color = NeonRed)
                             }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    HorizontalDivider(color = BorderColor, thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "CREADOR & CIFRADOR DE REPORTES AI (SQLITE)",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                        color = NeonAmber
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedTextField(
+                            value = reporteIncidenteNombre,
+                            onValueChange = { reporteIncidenteNombre = it },
+                            label = { Text("ID Reporte", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp) },
+                            singleLine = true,
+                            enabled = !generandoReporte,
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NeonAmber, focusedLabelColor = NeonAmber),
+                            modifier = Modifier.weight(0.4f).height(46.dp)
+                        )
+                        OutlinedTextField(
+                            value = reporteIncidenteDetalle,
+                            onValueChange = { reporteIncidenteDetalle = it },
+                            label = { Text("Detalle de Incidente o Amenaza", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp) },
+                            singleLine = true,
+                            enabled = !generandoReporte,
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NeonAmber, focusedLabelColor = NeonAmber),
+                            modifier = Modifier.weight(0.6f).height(46.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Button(
+                        onClick = {
+                            if (reporteIncidenteNombre.isNotBlank() && reporteIncidenteDetalle.isNotBlank()) {
+                                onGenerarYGuardarReporte(reporteIncidenteNombre, reporteIncidenteDetalle)
+                                reporteIncidenteNombre = ""
+                                reporteIncidenteDetalle = ""
+                            }
+                        },
+                        enabled = !generandoReporte && reporteIncidenteNombre.isNotBlank() && reporteIncidenteDetalle.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(containerColor = NeonAmber, contentColor = Obsidian),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth().height(36.dp)
+                    ) {
+                        if (generandoReporte) {
+                            CircularProgressIndicator(color = Obsidian, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("PROCESANDO & ENCRIPTANDO CON AI...", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        } else {
+                            Icon(imageVector = Icons.Default.EnhancedEncryption, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("ANALIZAR, ENCRIPTAR Y GUARDAR EN BÓVEDA", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

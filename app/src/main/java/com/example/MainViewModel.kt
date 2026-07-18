@@ -10,8 +10,9 @@ import com.example.domain.repository.LogRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.random.Random
 
 /**
@@ -82,6 +83,9 @@ class MainViewModel(
 
     private val _escaneandoRadar = MutableStateFlow(false)
     val escaneandoRadar: StateFlow<Boolean> = _escaneandoRadar.asStateFlow()
+
+    private val _generandoReporte = MutableStateFlow(false)
+    val generandoReporte: StateFlow<Boolean> = _generandoReporte.asStateFlow()
 
     private val _amenazasDetectadas = MutableStateFlow<List<String>>(
         listOf("Canal de Red: Seguro", "Firmas DePIN: Verificadas", "Nodos Activos: Sin intromisiones")
@@ -177,6 +181,20 @@ class MainViewModel(
         }
     }
 
+    fun generarYGuardarReporteInteligencia(nombre: String, incidente: String) {
+        viewModelScope.launch {
+            if (nombre.isNotBlank() && incidente.isNotBlank()) {
+                _generandoReporte.value = true
+                agregarLog("OMNI AI: Procesando incidente '$nombre' para reporte de alta fidelidad...")
+                val reportePlano = analyzeThreatsUseCase.generarReportePersonalizado(incidente)
+                val cifrado = cifrarSimetrico(reportePlano)
+                addTaskUseCase(nombre, "CIFRADO:$cifrado")
+                agregarLog("OMNI AI: Reporte de inteligencia encriptado y guardado en la bóveda: $nombre")
+                _generandoReporte.value = false
+            }
+        }
+    }
+
     fun agregarTarea(titulo: String, descripcion: String) {
         viewModelScope.launch {
             if (titulo.isNotBlank()) {
@@ -229,7 +247,7 @@ class MainViewModel(
     private suspend fun iniciarCicloPersistenciaFondo() {
         while (true) {
             delay(5000) // Ciclo periódico cada 5 segundos
-            val time = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+            val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
             
             // Simulación realista de hardware y red Web3
             val ramUsage = Random.nextDouble(22.1, 39.4)

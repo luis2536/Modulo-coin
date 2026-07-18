@@ -32,4 +32,23 @@ class AnalyzeThreatsUseCase(private val generativeModel: GenerativeModel) {
             emit(ResultWrapper.Error(e, "Falla de enlace neuronal AI: ${e.message}"))
         }
     }
+
+    suspend fun generarReportePersonalizado(incidente: String): String {
+        return try {
+            val apiKey = generativeModel.apiKey
+            val isDummy = apiKey.isBlank() || 
+                          apiKey == "MY_GEMINI_API_KEY" || 
+                          apiKey.contains("Dummy", ignoreCase = true)
+
+            if (isDummy) {
+                "REPORTES OMNI LOCAL: Incidente catalogado como '$incidente'. Se activó protocolo de mitigación preventiva. Tráfico balanceado."
+            } else {
+                val prompt = "Actúa como un analista táctico de seguridad militar de alto nivel. Genera un reporte resumido en español del siguiente incidente: $incidente. El reporte debe ser técnico, conciso, de máximo 2 oraciones, y proponer una contramedida táctica."
+                val response = generativeModel.generateContent(prompt)
+                response.text ?: "Reporte generado sin comentarios adicionales."
+            }
+        } catch (e: Exception) {
+            "ERROR NEURONAL: No se pudo generar reporte por AI. Detalle: ${e.message}"
+        }
+    }
 }
