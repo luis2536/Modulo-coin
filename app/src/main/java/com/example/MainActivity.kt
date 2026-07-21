@@ -128,25 +128,56 @@ fun SyntropyDeltaNexusApp(viewModel: MainViewModel = koinViewModel()) {
                         ),
                         label = "alpha"
                     )
-                    Row(
-                        modifier = Modifier
-                            .padding(end = 8.dp)
-                            .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
-                            .background(SlateGray, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 6.dp, vertical = 3.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(NeonGreen.copy(alpha = alpha)))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "GHOST: ACTIVO",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace
-                            ),
-                            color = NeonGreen.copy(alpha = alpha)
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Network status indicator
+                        Row(
+                            modifier = Modifier
+                                .padding(end = 6.dp)
+                                .border(1.dp, BorderColor.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                .background(DarkPurple, RoundedCornerShape(8.dp))
+                                .padding(horizontal = 6.dp, vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val networkColor = if (nodosRpc.isNotEmpty() && nodosRpc.any { it.latenciaMs < 200 }) NeonGreen else NeonAmber
+                            Icon(
+                                imageVector = Icons.Default.WifiTethering,
+                                contentDescription = "Node Health",
+                                tint = networkColor.copy(alpha = alpha),
+                                modifier = Modifier.size(10.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (nodosRpc.isNotEmpty()) "SYNC" else "SCAN",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                ),
+                                color = TextSecondary
+                            )
+                        }
+                        
+                        // Ghost shield indicator
+                        Row(
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
+                                .background(SlateGray, RoundedCornerShape(8.dp))
+                                .padding(horizontal = 6.dp, vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(NeonGreen.copy(alpha = alpha)))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "GHOST: ACTIVO",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                ),
+                                color = NeonGreen.copy(alpha = alpha)
+                            )
+                        }
                     }
                 }
             )
